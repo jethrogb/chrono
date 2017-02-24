@@ -375,5 +375,6 @@ pub trait TimeZone: Sized + Clone {
 
 pub mod utc;
 pub mod fixed;
+#[cfg(feature="local")]
 pub mod local;
 

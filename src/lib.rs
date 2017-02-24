@@ -350,6 +350,7 @@
 #![cfg_attr(bench, feature(test))] // lib stability features as per RFC #507
 #![deny(missing_docs)]
 
+#[cfg(feature="local")]
 extern crate time as oldtime;
 extern crate num;
 #[cfg(feature = "rustc-serialize")]
@@ -363,6 +364,7 @@ pub use oldtime::Duration;
 pub use offset::{TimeZone, Offset, LocalResult};
 pub use offset::utc::UTC;
 pub use offset::fixed::FixedOffset;
+#[cfg(feature="local")]
 pub use offset::local::Local;
 pub use naive::date::NaiveDate;
 pub use naive::time::NaiveTime;
@@ -377,6 +379,7 @@ pub mod prelude {
     pub use offset::{TimeZone, Offset};
     pub use offset::utc::UTC;
     pub use offset::fixed::FixedOffset;
+    #[cfg(feature="local")]
     pub use offset::local::Local;
     pub use naive::date::NaiveDate;
     pub use naive::time::NaiveTime;
@@ -391,6 +394,8 @@ macro_rules! try_opt {
 }
 
 mod div;
+#[cfg(not(feature="local"))]
+mod oldtime;
 pub mod offset;
 pub mod naive {
     //! Date and time types which do not concern about the timezones.

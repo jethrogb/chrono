@@ -4,11 +4,14 @@
 //! The UTC (Coordinated Universal Time) time zone.
 
 use std::fmt;
+#[cfg(feature="local")]
 use oldtime;
 
 use naive::date::NaiveDate;
 use naive::datetime::NaiveDateTime;
+#[cfg(feature="local")]
 use date::Date;
+#[cfg(feature="local")]
 use datetime::DateTime;
 use super::{TimeZone, Offset, LocalResult};
 use super::fixed::FixedOffset;
@@ -33,6 +36,7 @@ use super::fixed::FixedOffset;
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub struct UTC;
 
+#[cfg(feature="local")]
 impl UTC {
     /// Returns a `Date` which corresponds to the current date.
     pub fn today() -> Date<UTC> { UTC::now().date() }

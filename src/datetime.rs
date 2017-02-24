@@ -11,6 +11,7 @@ use oldtime::Duration as OldDuration;
 use {Weekday, Timelike, Datelike};
 use offset::{TimeZone, Offset};
 use offset::utc::UTC;
+#[cfg(feature="local")]
 use offset::local::Local;
 use offset::fixed::FixedOffset;
 use naive::time::NaiveTime;
@@ -391,6 +392,7 @@ impl str::FromStr for DateTime<UTC> {
     }
 }
 
+#[cfg(feature="local")]
 impl str::FromStr for DateTime<Local> {
     type Err = ParseError;
 
@@ -414,6 +416,7 @@ fn test_encodable_json<FUTC, FFixed, E>(to_string_utc: FUTC, to_string_fixed: FF
                Some(r#""2014-07-24T12:34:06+01:00:50""#.into()));
 }
 
+#[cfg(feature="local")]
 #[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
 fn test_decodable_json<FUTC, FFixed, FLocal, E>(utc_from_str: FUTC,
                                                 fixed_from_str: FFixed,
@@ -449,11 +452,40 @@ fn test_decodable_json<FUTC, FFixed, FLocal, E>(utc_from_str: FUTC,
     assert!(fixed_from_str(r#""2014-07-32T12:34:06Z""#).is_err());
 }
 
+#[cfg(not(feature="local"))]
+#[cfg(all(test, any(feature = "rustc-serialize", feature = "serde")))]
+fn test_decodable_json<FUTC, FFixed, E>(utc_from_str: FUTC,
+                                                fixed_from_str: FFixed,
+                                                _dummy: FFixed)
+    where FUTC: Fn(&str) -> Result<DateTime<UTC>, E>,
+          FFixed: Fn(&str) -> Result<DateTime<FixedOffset>, E>,
+          E: ::std::fmt::Debug
+{
+    // should check against the offset as well (the normal DateTime comparison will ignore them)
+    fn norm<Tz: TimeZone>(dt: &Option<DateTime<Tz>>) -> Option<(&DateTime<Tz>, &Tz::Offset)> {
+        dt.as_ref().map(|dt| (dt, dt.offset()))
+    }
+
+    assert_eq!(norm(&utc_from_str(r#""2014-07-24T12:34:06Z""#).ok()),
+               norm(&Some(UTC.ymd(2014, 7, 24).and_hms(12, 34, 6))));
+    assert_eq!(norm(&utc_from_str(r#""2014-07-24T13:57:06+01:23""#).ok()),
+               norm(&Some(UTC.ymd(2014, 7, 24).and_hms(12, 34, 6))));
+
+    assert_eq!(norm(&fixed_from_str(r#""2014-07-24T12:34:06Z""#).ok()),
+               norm(&Some(FixedOffset::east(0).ymd(2014, 7, 24).and_hms(12, 34, 6))));
+    assert_eq!(norm(&fixed_from_str(r#""2014-07-24T13:57:06+01:23""#).ok()),
+               norm(&Some(FixedOffset::east(60*60 + 23*60).ymd(2014, 7, 24).and_hms(13, 57, 6))));
+
+    assert!(utc_from_str(r#""2014-07-32T12:34:06Z""#).is_err());
+    assert!(fixed_from_str(r#""2014-07-32T12:34:06Z""#).is_err());
+}
+
 #[cfg(feature = "rustc-serialize")]
 mod rustc_serialize {
     use super::DateTime;
     use offset::TimeZone;
     use offset::utc::UTC;
+    #[cfg(feature="local")]
     use offset::local::Local;
     use offset::fixed::FixedOffset;
     use rustc_serialize::{Encodable, Encoder, Decodable, Decoder};
@@ -482,6 +514,7 @@ mod rustc_serialize {
         }
     }
 
+    #[cfg(feature="local")]
     impl Decodable for DateTime<Local> {
         fn decode<D: Decoder>(d: &mut D) -> Result<DateTime<Local>, D::Error> {
             match d.read_str()?.parse::<DateTime<FixedOffset>>() {
@@ -510,6 +543,7 @@ mod serde {
     use super::DateTime;
     use offset::TimeZone;
     use offset::utc::UTC;
+    #[cfg(feature="local")]
     use offset::local::Local;
     use offset::fixed::FixedOffset;
     use serde::{ser, de};
@@ -558,6 +592,7 @@ mod serde {
         }
     }
 
+    #[cfg(feature="local")]
     impl de::Deserialize for DateTime<Local> {
         fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
             where D: de::Deserializer
@@ -597,11 +632,13 @@ mod serde {
 #[cfg(test)]
 mod tests {
     use super::DateTime;
+    #[cfg(feature="local")]
     use Datelike;
     use naive::time::NaiveTime;
     use naive::date::NaiveDate;
     use offset::TimeZone;
     use offset::utc::UTC;
+    #[cfg(feature="local")]
     use offset::local::Local;
     use offset::fixed::FixedOffset;
     use oldtime::Duration;
@@ -676,6 +713,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature="local")]
     fn test_datetime_with_timezone() {
         let local_now = Local::now();
         let utc_now = local_now.with_timezone(&UTC);
@@ -741,6 +779,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature="local")]
     fn test_datetime_format_with_local() {
         // if we are not around the year boundary, local and UTC date should have the same year
         let dt = Local::now().with_month(5).unwrap();
@@ -748,6 +787,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature="local")]
     fn test_datetime_is_copy() {
         // UTC is known to be `Copy`.
         let a = UTC::now();
@@ -756,6 +796,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature="local")]
     fn test_datetime_is_send() {
         use std::thread;
 

@@ -19,8 +19,12 @@ appveyor = { repository = "chronotope/chrono" }
 [lib]
 name = "chrono"
 
+[features]
+default = ["local"]
+local = ["time"]
+
 [dependencies]
-time = "^0.1.36"
+time = { version = "^0.1.36", optional = true }
 num = { version = "0.1", default-features = false }
 rustc-serialize = { version = "0.3", optional = true }
 serde = { version = "0.9", optional = true }
